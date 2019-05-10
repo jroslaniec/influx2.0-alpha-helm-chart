@@ -84,7 +84,7 @@ spec:
           claimName: {{ .Values.persistence.name }}
         {{- else }}
         persistentVolumeClaim:
-          claimName: {{ template "influxdb.fullname" . }}
+          claimName: {{ template "influxdb2.0-alpha-helm-chart.fullname" . }}
         {{- end }}
       {{- else }}
         emptyDir: {}
