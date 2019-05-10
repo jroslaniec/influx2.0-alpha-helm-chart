@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "influxdb2.0-alpha-helm-chart.fullname" . }}-test-connection"
+  labels:
+{{ include "influxdb2.0-alpha-helm-chart.labels" . | indent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['{{ include "influxdb2.0-alpha-helm-chart.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never

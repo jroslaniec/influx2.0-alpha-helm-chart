@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "influxdb2.0-alpha-helm-chart.fullname" . }}
+  labels:
+{{ include "influxdb2.0-alpha-helm-chart.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "influxdb2.0-alpha-helm-chart.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "influxdb2.0-alpha-helm-chart.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          {{if .Values.config.assetsPath -}}
+          - "--assets-path={{.Values.config.assetsPath}}"
+          {{- end }}
+          {{if .Values.config.boltPath -}}
+          - "--bolt-path={{.Values.config.boltPath}}"
+          {{- end }}
+          {{if .Values.config.e2eTesting -}}
+          - "--e2e-testing"
+          {{- end }}
+          {{if .Values.config.enginePath -}}
+          - "--engine-path={{.Values.config.enginePath}}"
+          {{- end }}
+          {{if .Values.config.httpBindAddress -}}
+          - "--http-bind-address={{.Values.config.httpBindAddress}}"
+          {{- end }}
+          {{if .Values.config.logLevel -}}
+          - "--log-level={{.Values.config.logLevel}}"
+          {{- end }}
+          {{if .Values.config.reportingDisabled -}}
+          - "--reporting-disabled"
+          {{- end }}
+          {{if .Values.config.secretStore -}}
+          - "--secret-store={{.Values.config.secretStore}}"
+          {{- end }}
+          {{if .Values.config.store -}}
+          - "--store={{.Values.config.store}}"
+          {{- end }}
+          {{if .Values.config.tracingType -}}
+          - "--tracing-type={{.Values.config.tracingType}}"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 9999
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: data
+            mountPath: {{ .Values.storageDirectory }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: data
+      {{- if .Values.persistence.enabled }}
+        {{- if not (empty .Values.persistence.name) }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.name }}
+        {{- else }}
+        persistentVolumeClaim:
+          claimName: {{ template "influxdb.fullname" . }}
+        {{- end }}
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
